@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>紫微排盤小工具</title>
+    <meta
+      name="description"
+      content="輸入出生日期、時間與性別，快速產生紫微斗數命盤摘要與十二宮主星。"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/iztro@2.5.8/dist/iztro.min.js"></script>
+    <style>
+      :root {
+        --bg: #f6f0e4;
+        --bg-soft: rgba(255, 252, 247, 0.82);
+        --paper: rgba(255, 250, 243, 0.94);
+        --paper-strong: #fffaf2;
+        --line: rgba(94, 72, 42, 0.18);
+        --line-strong: rgba(123, 39, 24, 0.32);
+        --ink: #211912;
+        --muted: #665649;
+        --accent: #8d2a1a;
+        --accent-soft: rgba(141, 42, 26, 0.1);
+        --shadow: 0 22px 60px rgba(58, 39, 23, 0.12);
+        --radius-xl: 28px;
+        --radius-lg: 20px;
+        --radius-md: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Noto Sans TC", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 26%),
+          radial-gradient(circle at right center, rgba(165, 75, 39, 0.08), transparent 24%),
+          linear-gradient(180deg, #f7f1e6 0%, #f1e5d4 100%);
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.25;
+        background-image:
+          linear-gradient(rgba(120, 94, 56, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(120, 94, 56, 0.04) 1px, transparent 1px);
+        background-size: 22px 22px;
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 36px 0 72px;
+      }
+
+      .hero {
+        padding: 28px 30px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: linear-gradient(135deg, rgba(255, 250, 243, 0.94), rgba(246, 239, 229, 0.82));
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      .hero-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 24px;
+        align-items: flex-start;
+      }
+
+      .hero-copy h1 {
+        margin: 0;
+        font-family: "Noto Serif TC", serif;
+        font-size: clamp(2.1rem, 4vw, 3.5rem);
+        line-height: 1.08;
+        letter-spacing: 0.04em;
+      }
+
+      .hero-copy p {
+        max-width: 640px;
+        margin: 14px 0 0;
+        font-size: 1rem;
+        line-height: 1.75;
+        color: var(--muted);
+      }
+
+      .hero-note {
+        min-width: 220px;
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.55);
+      }
+
+      .hero-note strong {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+      }
+
+      .hero-note span {
+        display: block;
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 0.92rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(310px, 380px) minmax(0, 1fr);
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        background: var(--bg-soft);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
+      }
+
+      .form-panel {
+        padding: 28px;
+      }
+
+      .panel-title {
+        margin: 0 0 6px;
+        font-family: "Noto Serif TC", serif;
+        font-size: 1.55rem;
+      }
+
+      .panel-subtitle {
+        margin: 0 0 26px;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.7;
+      }
+
+      form {
+        display: grid;
+        gap: 16px;
+      }
+
+      .field-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .triple {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        font-size: 0.93rem;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      button {
+        font: inherit;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border: 1px solid rgba(107, 84, 57, 0.22);
+        border-radius: 14px;
+        padding: 14px 16px;
+        background: var(--paper-strong);
+        color: var(--ink);
+        outline: none;
+        transition: border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(141, 42, 26, 0.12);
+        transform: translateY(-1px);
+      }
+
+      .switch-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .checkbox {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 2px;
+        color: var(--muted);
+      }
+
+      .checkbox input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 4px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 14px 20px;
+        cursor: pointer;
+        transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        flex: 1;
+        background: linear-gradient(135deg, #a43320 0%, #7e2216 100%);
+        color: #fff8f2;
+        box-shadow: 0 14px 24px rgba(126, 34, 22, 0.24);
+      }
+
+      .secondary {
+        background: rgba(255, 255, 255, 0.65);
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .helper {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.7;
+      }
+
+      .result-panel {
+        padding: 28px;
+      }
+
+      .status {
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.42);
+        color: var(--muted);
+        line-height: 1.7;
+        min-height: 56px;
+      }
+
+      .status.error {
+        color: #8a2215;
+        border-color: rgba(138, 34, 21, 0.26);
+        background: rgba(138, 34, 21, 0.07);
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .summary-card {
+        padding: 14px 14px 16px;
+        border-radius: 18px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+      }
+
+      .summary-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-bottom: 8px;
+      }
+
+      .summary-card strong {
+        display: block;
+        font-size: 1rem;
+        line-height: 1.45;
+      }
+
+      .chart {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .palace {
+        min-height: 150px;
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 250, 243, 0.96), rgba(248, 240, 228, 0.78));
+      }
+
+      .palace-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: baseline;
+      }
+
+      .palace h3 {
+        margin: 0;
+        font-family: "Noto Serif TC", serif;
+        font-size: 1rem;
+      }
+
+      .palace small {
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .tag-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .tag {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 0.82rem;
+      }
+
+      .muted-block {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 0.85rem;
+        line-height: 1.65;
+      }
+
+      .footer-note {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 1040px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .summary {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .shell {
+          width: min(100% - 18px, 100%);
+          padding: 18px 0 44px;
+        }
+
+        .hero,
+        .form-panel,
+        .result-panel {
+          padding: 22px 18px;
+        }
+
+        .hero-top,
+        .switch-row,
+        .triple,
+        .actions {
+          grid-template-columns: 1fr;
+          flex-direction: column;
+        }
+
+        .summary {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .chart {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-top">
+          <div class="hero-copy">
+            <h1>紫微排盤小工具</h1>
+            <p>
+              輸入出生年月日、時辰與性別，就能快速產生紫微斗數命盤摘要，包含陽曆、農曆、生肖、星座、命宮、身宮，以及十二宮主星分布。
+            </p>
+          </div>
+          <aside class="hero-note">
+            <strong>排盤方式</strong>
+            <span>支援陽曆與農曆輸入，農曆可切換閏月；結果由 `iztro` 套件即時計算，不需要後端。</span>
+          </aside>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="panel form-panel">
+          <h2 class="panel-title">輸入資料</h2>
+          <p class="panel-subtitle">預設已帶入一組範例資料。你可以直接修改後按下「立即排盤」。</p>
+
+          <form id="chart-form">
+            <div class="field-grid">
+              <div class="switch-row">
+                <label>
+                  曆法
+                  <select id="calendar-type" name="calendarType">
+                    <option value="solar">陽曆</option>
+                    <option value="lunar">農曆</option>
+                  </select>
+                </label>
+
+                <label>
+                  性別
+                  <select id="gender" name="gender">
+                    <option value="男">男</option>
+                    <option value="女" selected>女</option>
+                  </select>
+                </label>
+              </div>
+
+              <label id="solar-wrapper">
+                出生日期
+                <input id="solar-date" name="solarDate" type="date" value="2000-08-16" required />
+              </label>
+
+              <div id="lunar-wrapper" class="hidden">
+                <label>
+                  農曆日期
+                  <div class="triple">
+                    <input id="lunar-year" name="lunarYear" type="number" min="1900" max="2100" value="2000" />
+                    <input id="lunar-month" name="lunarMonth" type="number" min="1" max="12" value="7" />
+                    <input id="lunar-day" name="lunarDay" type="number" min="1" max="30" value="17" />
+                  </div>
+                </label>
+                <label class="checkbox">
+                  <input id="is-leap-month" name="isLeapMonth" type="checkbox" />
+                  這個月份是閏月
+                </label>
+              </div>
+
+              <label>
+                出生時間
+                <select id="time-index" name="timeIndex">
+                  <option value="0">早子時 00:00-01:00</option>
+                  <option value="1">丑時 01:00-03:00</option>
+                  <option value="2" selected>寅時 03:00-05:00</option>
+                  <option value="3">卯時 05:00-07:00</option>
+                  <option value="4">辰時 07:00-09:00</option>
+                  <option value="5">巳時 09:00-11:00</option>
+                  <option value="6">午時 11:00-13:00</option>
+                  <option value="7">未時 13:00-15:00</option>
+                  <option value="8">申時 15:00-17:00</option>
+                  <option value="9">酉時 17:00-19:00</option>
+                  <option value="10">戌時 19:00-21:00</option>
+                  <option value="11">亥時 21:00-23:00</option>
+                  <option value="12">晚子時 23:00-00:00</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary" type="submit">立即排盤</button>
+              <button class="secondary" type="button" id="fill-sample">載入範例</button>
+            </div>
+
+            <p class="helper">
+              備註：本工具為命盤生成與資訊整理用途，排盤結果依 `iztro` 演算法輸出，建議搭配你的命理筆記一起閱讀。
+            </p>
+          </form>
+        </aside>
+
+        <section class="panel result-panel">
+          <h2 class="panel-title">命盤結果</h2>
+          <p class="panel-subtitle">送出後會在這裡顯示摘要與十二宮主星。</p>
+
+          <div id="status" class="status">正在載入預設命盤...</div>
+
+          <div id="summary" class="summary"></div>
+          <div id="chart" class="chart"></div>
+
+          <p class="footer-note">
+            命宮、身宮與十二宮主星的文字來自 `iztro` 回傳資料。若要延伸分析，可再加入流年、大限或四化說明區塊。
+          </p>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("chart-form");
+      const calendarType = document.getElementById("calendar-type");
+      const solarWrapper = document.getElementById("solar-wrapper");
+      const lunarWrapper = document.getElementById("lunar-wrapper");
+      const statusBox = document.getElementById("status");
+      const summary = document.getElementById("summary");
+      const chart = document.getElementById("chart");
+      const fillSampleButton = document.getElementById("fill-sample");
+
+      const summaryFields = [
+        ["陽曆", "solarDate"],
+        ["農曆", "lunarDate"],
+        ["生肖", "zodiac"],
+        ["星座", "sign"],
+        ["命宮", "soul"],
+        ["身宮", "body"],
+      ];
+
+      function setCalendarVisibility() {
+        const isSolar = calendarType.value === "solar";
+        solarWrapper.classList.toggle("hidden", !isSolar);
+        lunarWrapper.classList.toggle("hidden", isSolar);
+      }
+
+      function toCompactDate(dateString) {
+        const [year, month, day] = dateString.split("-").map(Number);
+        return `${year}-${month}-${day}`;
+      }
+
+      function palaceMajorStars(palace) {
+        return palace.majorStars.length
+          ? palace.majorStars.map((star) => star.name)
+          : ["無主星"];
+      }
+
+      function renderSummary(astrolabe) {
+        summary.innerHTML = summaryFields
+          .map(
+            ([label, key]) => `
+              <article class="summary-card">
+                <span>${label}</span>
+                <strong>${astrolabe[key] || "—"}</strong>
+              </article>
+            `
+          )
+          .join("");
+      }
+
+      function renderChart(astrolabe) {
+        chart.innerHTML = astrolabe.palaces
+          .map((palace) => {
+            const palaceTitle = palace.name.endsWith("宮") ? palace.name : `${palace.name}宮`;
+            const stars = palaceMajorStars(palace)
+              .map((name) => `<span class="tag">${name}</span>`)
+              .join("");
+            const adjunct = palace.minorStars.slice(0, 3).map((star) => star.name).join("、") || "無";
+            return `
+              <article class="palace">
+                <div class="palace-header">
+                  <h3>${palaceTitle}</h3>
+                  <small>${palace.heavenlyStem}${palace.earthlyBranch}</small>
+                </div>
+                <div class="tag-list">${stars}</div>
+                <div class="muted-block">
+                  副星：${adjunct}<br />
+                  長生：${palace.changsheng12}　大限：${palace.decadal.range[0]}-${palace.decadal.range[1]} 歲
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      function saveFormState() {
+        const data = Object.fromEntries(new FormData(form).entries());
+        data.isLeapMonth = document.getElementById("is-leap-month").checked;
+        localStorage.setItem("ziwei-form-state", JSON.stringify(data));
+      }
+
+      function restoreFormState() {
+        const saved = localStorage.getItem("ziwei-form-state");
+        if (!saved) {
+          fillSample();
+          return;
+        }
+
+        const data = JSON.parse(saved);
+        Object.entries(data).forEach(([key, value]) => {
+          const field = form.elements.namedItem(key);
+          if (!field) {
+            return;
+          }
+
+          if (field.type === "checkbox") {
+            field.checked = Boolean(value);
+          } else {
+            field.value = value;
+          }
+        });
+      }
+
+      function fillSample() {
+        form.reset();
+        document.getElementById("solar-date").value = "2000-08-16";
+        document.getElementById("calendar-type").value = "solar";
+        document.getElementById("gender").value = "女";
+        document.getElementById("time-index").value = "2";
+        document.getElementById("lunar-year").value = "2000";
+        document.getElementById("lunar-month").value = "7";
+        document.getElementById("lunar-day").value = "17";
+        document.getElementById("is-leap-month").checked = false;
+        setCalendarVisibility();
+      }
+
+      function buildAstrolabe() {
+        const timeIndex = Number(document.getElementById("time-index").value);
+        const gender = document.getElementById("gender").value;
+        const isSolar = calendarType.value === "solar";
+
+        if (isSolar) {
+          const solarDate = document.getElementById("solar-date").value;
+          if (!solarDate) {
+            throw new Error("請先輸入陽曆日期。");
+          }
+
+          return iztro.astro.bySolar(toCompactDate(solarDate), timeIndex, gender, true, "zh-TW");
+        }
+
+        const year = Number(document.getElementById("lunar-year").value);
+        const month = Number(document.getElementById("lunar-month").value);
+        const day = Number(document.getElementById("lunar-day").value);
+        const isLeapMonth = document.getElementById("is-leap-month").checked;
+
+        if (!year || !month || !day) {
+          throw new Error("請輸入完整的農曆年月日。");
+        }
+
+        return iztro.astro.byLunar(`${year}-${month}-${day}`, timeIndex, gender, isLeapMonth, true, "zh-TW");
+      }
+
+      function updateStatus(message, isError = false) {
+        statusBox.textContent = message;
+        statusBox.classList.toggle("error", isError);
+      }
+
+      function submitChart(event) {
+        if (event) {
+          event.preventDefault();
+        }
+
+        try {
+          saveFormState();
+          const astrolabe = buildAstrolabe();
+          renderSummary(astrolabe);
+          renderChart(astrolabe);
+          updateStatus(`已完成排盤：${astrolabe.gender}，${astrolabe.time}，命宮 ${astrolabe.soul}。`);
+        } catch (error) {
+          summary.innerHTML = "";
+          chart.innerHTML = "";
+          updateStatus(error.message || "排盤失敗，請檢查輸入資料。", true);
+        }
+      }
+
+      restoreFormState();
+      setCalendarVisibility();
+      form.addEventListener("submit", submitChart);
+      calendarType.addEventListener("change", setCalendarVisibility);
+      fillSampleButton.addEventListener("click", () => {
+        fillSample();
+        submitChart();
+      });
+
+      submitChart();
+    </script>
+  </body>
+</html>
