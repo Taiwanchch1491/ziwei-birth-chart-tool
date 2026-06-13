@@ -2,6 +2,11 @@
 
 這是一個獨立的靜態 HTML 小工具，使用 [`iztro`](https://github.com/SylarLong/iztro) 在前端直接產生紫微斗數命盤。
 
+## 線上版本
+
+- GitHub Repo: https://github.com/Taiwanchch1491/ziwei-birth-chart-tool
+- GitHub Pages: https://taiwanchch1491.github.io/ziwei-birth-chart-tool/
+
 ## 功能
 
 - 支援陽曆與農曆輸入
